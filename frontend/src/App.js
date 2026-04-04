@@ -58,7 +58,7 @@ export default function App() {
   const analyzeText = useCallback(async () => {
     if (!textInput.trim()) return;
     setLoading(true);
-    const res = await fetch("http://127.0.0.1:8000/analyze-text", {
+    const res = await fetch("https://moodviz.onrender.com/analyze-text", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: textInput }),
@@ -82,7 +82,7 @@ export default function App() {
     setLoading(true);
     const form = new FormData();
     form.append("file", blob, "snap.jpg");
-    const res = await fetch("http://127.0.0.1:8000/analyze", {
+    const res = await fetch("https://moodviz.onrender.com/analyze", {
       method: "POST",
       body: form,
     });
@@ -101,7 +101,7 @@ export default function App() {
     setSnapshot(URL.createObjectURL(file));
     const form = new FormData();
     form.append("file", file, file.name);
-    const res = await fetch("http://127.0.0.1:8000/analyze", {
+    const res = await fetch("https://moodviz.onrender.com/analyze", {
       method: "POST",
       body: form,
     });
