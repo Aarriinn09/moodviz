@@ -138,7 +138,7 @@ def detect_text_emotion(text: str) -> str:
                      "thinking about you", "can't stop thinking",
                      "butterflies", "first date", "anniversary",
                      "forever", "always", "meant to be", "destiny",
-                     "true love", "sweetheart", "darling", "mine"],
+                     "true love", "sweetheart", "darling", "mine", "romance", "lovely"],
 
         "neutral": ["okay", "fine", "alright", "meh", "whatever",
                     "normal", "usual", "same", "nothing special",
