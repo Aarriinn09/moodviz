@@ -56,7 +56,9 @@ export default function CanvasVisualizer({ emotion = "neutral" }) {
       let particles = [];
 
       p.setup = () => {
-        p.createCanvas(580, 380).parent(containerRef.current);
+        const canvas = p.createCanvas(580, 380).parent(containerRef.current);
+        canvas.elt.style.touchAction = "auto";
+        canvas.elt.style.pointerEvents = "none";
         p.colorMode(p.RGB);
         for (let i = 0; i < 30; i++) {
           particles.push({
@@ -98,6 +100,8 @@ export default function CanvasVisualizer({ emotion = "neutral" }) {
         borderRadius: "12px",
         overflow: "hidden",
         boxShadow: "0 0 40px rgba(0,0,0,0.5)",
+        touchAction: "auto",
+        pointerEvents: "none",
       }}
     />
   );
