@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fer import FER
 import cv2, shutil, os, requests
 from dotenv import load_dotenv
+# import textblob
 
 
 load_dotenv()
@@ -56,38 +57,133 @@ MOOD_PARAMS = {
 #         print("Gemini parse error:", e)
 #         return "neutral"
 def detect_text_emotion(text: str) -> str:
-    text = text.lower()
-    
-    keywords = {
-        "happy":    ["happy", "excited", "joy", "great", "amazing", "wonderful",
-                     "fantastic", "got a job", "promoted", "celebration", "blessed", "thrilled",
-                     "smile", "laugh", "fun", "enjoy", "delighted", "pleased", "glad"],
-        "sad":      ["sad", "depressed", "lonely", "heartbroken", "miss", "crying","cry","upset",
-                     "girlfriend left", "breakup", "broke up", "lost", "grief", "hopeless",
-                     "unhappy", "miserable", "tears", "hurt", "painful", "alone"],
-        "angry":    ["angry", "furious", "fight", "hate", "frustrated", "annoyed", "rage",
-                     "argument", "betrayed", "cheated", "lied", "unfair", "mad", "irritated",
-                     "outraged", "livid", "conflict"],
-        "fear":     ["scared", "afraid", "nervous", "anxious", "worried", "panic", "stress",
-                     "terrified", "fear", "exam", "interview", "test", "dread", "horror"],
-        "surprise": ["surprise","surprised", "shocked", "unexpected", "unbelievable", "wow", "sudden",
-                     "never expected", "cant believe", "astonished", "amazed", "stunning"],
-        "disgust":  ["disgusted","disgust", "gross", "awful", "horrible", "sick", "terrible", "worst",
-                     "nasty", "revolting", "appalled"],
-        "romantic": ["love", "crush", "romantic", "date", "valentines", "heart",
-             "girlfriend", "boyfriend", "propose", "kiss", "missing you",
-             "falling in love", "feelings", "adore", "soulmate"],
-    }
-    
-    scores = {emotion: 0 for emotion in keywords}
-    for emotion, words in keywords.items():
-        for word in words:
-            if word in text:
-                scores[emotion] += 1
-    
-    best = max(scores, key=scores.get)
-    return best if scores[best] > 0 else "neutral"
+    text_lower = text.lower()
 
+    negations = ["not", "never", "don't", "dont", "can't", "cant",
+                 "won't", "wont", "no", "neither", "nor", "hardly",
+                 "barely", "doesn't", "doesnt", "isn't", "isnt",
+                 "wasn't", "wasnt", "couldn't", "couldnt", "shouldn't",
+                 "shouldnt", "wouldn't", "wouldnt", "nothing", "nobody"]
+
+    words = text_lower.split()
+    negated = False
+    for i, word in enumerate(words):
+        if word in negations:
+            negated = True
+            break
+
+    keywords = {
+        "happy": ["happy", "excited", "joy", "great", "amazing", "love",
+                  "wonderful", "fantastic", "got a job", "promoted",
+                  "celebration", "blessed", "thrilled", "smile", "laugh",
+                  "fun", "enjoy", "delighted", "pleased", "glad",
+                  "graduated", "passed", "won", "selected", "accepted",
+                  "married", "engaged", "baby", "born", "birthday",
+                  "vacation", "holiday", "success", "achieved", "proud",
+                  "blessed", "grateful", "thankful", "relieved", "hired",
+                  "offer", "new job", "promotion", "raise", "bonus",
+                  "best day", "amazing day", "great news", "good news"],
+
+        "sad": ["sad", "depressed", "lonely", "heartbroken", "miss",
+                "crying", "upset", "broke up", "lost", "grief", "hopeless",
+                "unhappy", "miserable", "tears", "hurt", "painful", "alone",
+                "died", "death", "funeral", "passed away", "gone forever",
+                "miss you", "lost my", "dog died", "cat died", "failed",
+                "rejected", "fired", "breakup", "divorce", "hospital",
+                "sick", "ill", "accident", "nightmare", "terrible day",
+                "worst day", "bad news", "no one", "nobody cares",
+                "feel empty", "feel nothing", "gave up", "no hope",
+                "left me", "abandoned", "ignored", "invisible",
+                "exhausted", "drained", "broken", "shattered", "numb",
+                "lost everything", "losing", "failure", "demoted",
+                "cheated on", "betrayed", "used", "worthless", "useless"],
+
+        "angry": ["angry", "furious", "fight", "hate", "frustrated",
+                  "annoyed", "rage", "argument", "betrayed", "cheated",
+                  "lied", "unfair", "mad", "irritated", "outraged",
+                  "disrespected", "ignored", "insulted", "humiliated",
+                  "backstabbed", "used me", "fed up", "sick of",
+                  "tired of", "cant stand", "drives me crazy", "pissed",
+                  "enraged", "livid", "disgusted with", "fed up with",
+                  "done with", "had enough", "screaming", "yelling",
+                  "threatening", "abusive", "toxic", "manipulated"],
+
+        "fear": ["scared", "afraid", "nervous", "anxious", "worried",
+                 "panic", "stress", "terrified", "fear", "exam",
+                 "interview", "dread", "surgery", "operation", "result",
+                 "waiting", "uncertain", "phobia", "nightmare", "danger",
+                 "threatened", "unsafe", "paranoid", "trembling",
+                 "shaking", "heart racing", "cant breathe", "overwhelmed",
+                 "pressure", "deadline", "presentation", "test",
+                 "evaluation", "judgment", "what if", "going wrong"],
+
+        "surprise": ["surprised", "shocked", "unexpected", "unbelievable",
+                     "wow", "never expected", "cant believe", "astonished",
+                     "speechless", "mind blown", "out of nowhere",
+                     "didnt see that coming", "plot twist", "sudden",
+                     "no way", "seriously", "really", "omg", "oh my god",
+                     "whoa", "incredible", "extraordinary", "remarkable"],
+
+        "disgust": ["disgusted", "gross", "awful", "horrible", "sick",
+                    "terrible", "worst", "nasty", "revolting", "appalled",
+                    "repulsed", "nauseated", "vile", "filthy", "dirty",
+                    "disgusting", "repulsive", "yuck", "eww", "pathetic",
+                    "shameful", "embarrassing", "cringe", "toxic"],
+
+        "romantic": ["love", "crush", "romantic", "date", "valentines",
+                     "heart", "propose", "kiss", "missing you",
+                     "falling in love", "feelings", "adore", "soulmate",
+                     "together", "relationship", "partner", "cuddle",
+                     "holding hands", "special someone", "my person",
+                     "thinking about you", "can't stop thinking",
+                     "butterflies", "first date", "anniversary",
+                     "forever", "always", "meant to be", "destiny",
+                     "true love", "sweetheart", "darling", "mine"],
+
+        "neutral": ["okay", "fine", "alright", "meh", "whatever",
+                    "normal", "usual", "same", "nothing special",
+                    "just another", "as always", "routine", "average",
+                    "moderate", "so so", "not bad", "not good"],
+    }
+
+    OPPOSITES = {
+        "happy":    "sad",
+        "sad":      "happy",
+        "angry":    "neutral",
+        "fear":     "neutral",
+        "surprise": "neutral",
+        "disgust":  "neutral",
+        "romantic": "sad",
+        "neutral":  "neutral",
+    }
+
+    scores = {emotion: 0 for emotion in keywords}
+    for emotion, words_list in keywords.items():
+        for word in words_list:
+            if word in text_lower:
+                scores[emotion] += 1
+
+    best = max(scores, key=scores.get)
+
+    if scores[best] > 0:
+        if negated:
+            return OPPOSITES.get(best, "neutral")
+        return best
+
+    # Fallback — TextBlob sentiment
+    try:
+        from textblob import TextBlob
+        blob = TextBlob(text)
+        polarity = blob.sentiment.polarity
+        if polarity > 0.3:
+            return "happy"
+        elif polarity < -0.3:
+            return "sad"
+        else:
+            return "neutral"
+    except Exception:
+        return "neutral"
+    
 def get_spotify_token():
     r = requests.post("https://accounts.spotify.com/api/token",
         data={"grant_type": "client_credentials"},
